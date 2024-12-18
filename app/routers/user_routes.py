@@ -246,18 +246,46 @@ async def verify_email(user_id: UUID, token: str, db: AsyncSession = Depends(get
         return {"message": "Email verified successfully"}
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification token")
 
-@router.put("/users/{user_id}/profile/", tags=["User Profile"])
-async def update_profile(user_id: UUID, user_update: UserUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)): 
-
-    if user_id != str(current_user.id):
-        raise HTTPException(status_code=403, detail="Not authorized to update this profile.")
+@router.put("/users/{user_id}/profile/")
+async def update_profile(user_id: UUID, user_update: UserUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    if user_id != str(current_user['user_id']):
+        raise HTTPException(status_code=200, detail="You are not authorized to update this profile.")
     
     user = db.query(user).filter(user.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
     
-    for field, value in user_update.dict(exclude_unset=True).items():
-        setattr(user, field, value)
+    # Update user fields
+    for key, value in user_update.dict(exclude_unset=True).items():
+        setattr(user, key, value)
     db.commit()
     db.refresh(user)
     return {"message": "Profile updated successfully.", "user": user}
+
+
+async def upgrade_user_to_professional(
+    user_id: UUID, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: dict = Depends(get_current_user), 
+    email_service: EmailService = Depends(get_email_service)):
+    if current_user['role'] not in ["manager", "admin"]:
+        raise HTTPException(status_code=403, detail="You are not authorized to upgrade users.")
+    
+    user = db.query(user).filter(user.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    
+    user.professional_status = True
+    db.commit()
+    db.refresh(user)
+    
+    # Send notification about  upgrade
+    await email_service.send_user_email(
+        {
+            "name": user.first_name or user.nickname,  
+            "email": user.email
+        },
+        'upgrade_pro'  
+    )
+    
+    return {"message": "User upgraded to professional status successfully.", "user": user}
