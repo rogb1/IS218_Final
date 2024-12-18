@@ -52,6 +52,7 @@ async def test_update_user_email_access_allowed(async_client, admin_user, admin_
     assert response.json()["email"] == updated_data["email"]
 
 
+
 @pytest.mark.asyncio
 async def test_delete_user(async_client, admin_user, admin_token):
     headers = {"Authorization": f"Bearer {admin_token}"}
@@ -189,4 +190,23 @@ async def test_list_users_unauthorized(async_client, user_token):
         "/users/",
         headers={"Authorization": f"Bearer {user_token}"}
     )
-    assert response.status_code == 403  # Forbidden, as expected for regular user
+    assert response.status_code == 403  #f
+
+
+@pytest.mark.asyncio
+async def test_update_user_profile(async_client, admin_user, admin_token):
+    updated_data = {
+        "email": f"updated_{admin_user.id}@example.com",
+        "full_name": "Updated Admin User Name"
+    }
+
+    headers = {"Authorization": f"Bearer {admin_token}"}
+
+    response = await async_client.put(f"/users/{admin_user.id}/profile/", json=updated_data, headers=headers)
+
+    assert response.status_code == 200
+
+    
+   
+
+
