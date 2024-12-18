@@ -25,7 +25,8 @@ class EmailService:
         subject_map = {
             'email_verification': "Verify Your Account",
             'password_reset': "Password Reset Instructions",
-            'account_locked': "Account Locked Notification"
+            'account_locked': "Account Locked Notification",
+            'upgrade_pro': "Account upgraded to Professional"
         }
 
         if email_type not in subject_map:
@@ -43,3 +44,5 @@ class EmailService:
             "verification_url": verification_url,
             "email": user.email
         }, 'email_verification')
+
+    
