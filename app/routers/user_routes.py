@@ -245,3 +245,19 @@ async def verify_email(user_id: UUID, token: str, db: AsyncSession = Depends(get
     if await UserService.verify_email_with_token(db, user_id, token):
         return {"message": "Email verified successfully"}
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification token")
+
+@router.put("/users/{user_id}/profile/", tags=["User Profile"])
+async def update_profile(user_id: UUID, user_update: UserUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)): 
+
+    if user_id != str(current_user.id):
+        raise HTTPException(status_code=403, detail="Not authorized to update this profile.")
+    
+    user = db.query(user).filter(user.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    
+    for field, value in user_update.dict(exclude_unset=True).items():
+        setattr(user, field, value)
+    db.commit()
+    db.refresh(user)
+    return {"message": "Profile updated successfully.", "user": user}
