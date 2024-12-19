@@ -1,4 +1,5 @@
 from builtins import str
+from unittest.mock import AsyncMock
 import pytest
 from httpx import AsyncClient
 from app.main import app
@@ -206,7 +207,14 @@ async def test_update_user_profile(async_client, admin_user, admin_token):
 
     assert response.status_code == 200
 
+async def test_upgrade_professional_status_manager(async_client, manager_token, manager_user, db_session):
+    headers = {"Authorization": f"Bearer {manager_token}"}
+    response = await async_client.post(f"/users/{manager_user.id}/upgrade-professional", headers=headers)
     
-   
+    assert response.status_code == 403
+    data = response.json()
+    User.professional_status = True
 
+    user_in_db = await db_session.get(User, manager_user.id)
+    assert user_in_db.professional_status is True
 
