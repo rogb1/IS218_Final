@@ -262,6 +262,7 @@ async def update_profile(user_id: UUID, user_update: UserUpdate, db: AsyncSessio
     db.refresh(user)
     return {"message": "Profile updated successfully.", "user": user}
 
+@router.post("/users/{user_id}/upgrade-professional", tags=["User Management Requires (Admin or Manager Roles)"])
 
 async def upgrade_user_to_professional(
     user_id: UUID, 
